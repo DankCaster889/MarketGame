@@ -82,12 +82,62 @@ public:
 
   }
 
+  void backwardPass(const std::vector<double>& input,
+		    const std::vector<double>& target,
+		    const std::vector<double>& outputValues,
+		    double learningRate) {
+
+    std::vector<double> outputErrors(outputValues.size());
+    for (size_t i = 0; i < outputValues.size(); ++i) {
+      outputErrors[i] = target[i] - outputValues[i];
+    }
+
+    std::vector<double> outputGradients(outputValues.size());
+    for (size_t i = 0; i < outputValues.size(); ++i) {
+      outputGradients[i] = outputErrors[i] * sigmoid_deriv(outputValues[i]);
+    }
+
+    for (size_t i = 0; i < hiddenBiases.size(); ++i) {
+      outputBiases[i] += learningRate * outputGradients[i];
+      for (size_t j = 0; j < hiddenOutputWeights.size(); ++j) {
+        hiddenOutputWeights[j][i] += learningRate * outputGradients[i] * hiddenValues[j];
+      }
+    }
+
+    std::vector<double> hiddenErrors(hiddenValues.size());
+    for (size_t i = 0; i < hiddenValues.size(); ++i) {
+      double sum = 0.0;
+      for (size_t j = 0; j < outputValues.size(); ++j) {
+        sum += outputGradients[j] * hiddenOutputWeights[i][j];
+      }
+      hiddenErrors[i] = sum;
+    }
+
+    std::vector<double> hiddenGradients(hiddenValues.size());
+    for (size_t i = 0; i < hiddenValues.size(); ++i) {
+      hiddenGradients[i] = hiddenErrors[i] * sigmoid_deriv(hiddenValues[i]);
+    }
+
+    for (size_t i = 0; i < input.size(); ++i) {
+      for (size_t j = 0; j < outputValues.size(); ++j) {
+        inputHiddenWeights[i][j] += learningRate * hiddenGradients[j] * input[i];
+      }    
+    }
+
+    for (size_t i = 0; i < input.size(); ++i) {
+      hiddenBiases[i] += learningRate * hiddenGradients[i];                     
+    }
+
+  }
+
 };
 
 int main() {
   NeuralNetwork neuralNetwork(4, 3, 2);
 
   std::vector<double> input = {0, 1, 0, 1};
+
+  std::vector<double> target = {1, 0};
 
   std::vector<double> output = neuralNetwork.forwardPass(input);
 
